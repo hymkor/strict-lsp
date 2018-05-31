@@ -4,43 +4,72 @@
 ;   s-exp - S式
 ; returns
 ;   未宣言の変数のリスト
-(defun strictsub (vars s-exp / equtions warnings tmp)
+(defun strictsub (vars s-exp / warnings word add-warn test-var call-self eval-rest)
   (setq warnings nil)
+
+  (setq add-warn (lambda (x)
+    (setq warnings (cons x warnings))
+  ))
+
+  (setq call-self (lambda (v x)
+      (setq warnings (append warnings (strictsub v x)))
+  ))
+
+  (setq eval-rest (lambda (a / tmp)
+    (if (listp a)
+      (foreach tmp a
+        (if (listp tmp)
+          (call-self vars tmp)
+        )
+      )
+    )
+  ))
+
+  (setq test-var (lambda (v)
+    (if (and v (not (member v vars)))
+      (add-warn v)
+    )
+  ))
+
   (cond
     ((or (not s-exp) (not (listp s-exp)))
          ; do nothing
     )
-    ((= (car s-exp) 'LAMBDA)
-      (setq warnings (append warnings (strictsub (append vars (cadr s-exp)) (cddr s-exp))))
+    ((= (setq word (car s-exp)) 'LAMBDA)
+      (call-self (append vars (cadr s-exp)) (cddr s-exp))
     )
-    ((= (car s-exp) 'SETQ)
-      (setq equtions (cdr s-exp))
-      (while equtions
-          (if (not (member (car equtions) vars))
-            (setq warnings (cons (car equtions) warnings))
-          )
-          (if (listp (cadr equtions))
-            (setq warnings (append warnings (strictsub vars (cadr equtions))))
-          )
-          (setq equtions (cddr equtions))
-      )
+    ((= word 'FOREACH)
+      (test-var (cadr s-exp))
+      (eval-rest (cddr s-exp))
+    )
+    ((= word 'SETQ)
+      ((lambda (/ equtions)
+        (setq equtions (cdr s-exp))
+        (while equtions
+            (test-var (car equtions))
+
+            (if (listp (cadr equtions))
+              (call-self vars (cadr equtions))
+            )
+
+            (setq equtions (cddr equtions))
+        )
+      ))
     )
     (T
       (if (listp (car s-exp))
-        (setq warnings (append warnings (strictsub vars (car s-exp))))
+        (call-self vars (car s-exp))
       )
-      (if (listp (cdr s-exp))
-        (setq warnings (append warnings (strictsub vars (cdr s-exp))))
-      )
+      (eval-rest (cdr s-exp))
     )
   )
   warnings
 )
 
 ; Lisp のソースで定義されている関数内で、
-; ローカル宣言されていない変数に setq していたら、
+; ローカル宣言されていない変数に setq / foreach していたら、
 ; 表示する
-(defun strict (fname / tmp fd source s-exp warnings uniq)
+(defun strict (fname / tmp fd source s-exp warnings uniq w)
   ; 拡張子がなければ付加
   (if (or (< (strlen fname) 4)
           (/= (strcase (substr fname (- (strlen fname) 3))) ".LSP"))
@@ -81,6 +110,12 @@
               (foreach w uniq
                 (princ "\n  ")(prin1 w)
               )
+            )
+            ; else
+            (progn
+              (terpri)
+              (prin1 (cadr tmp))
+              (princ " -> Ok")
             )
           )
         )
