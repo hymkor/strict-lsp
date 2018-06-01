@@ -8,7 +8,9 @@
   (setq warnings nil)
 
   (setq add-warn (lambda (x)
-    (setq warnings (cons x warnings))
+    (if (not (member x warnings))
+      (setq warnings (cons x warnings))
+    )
   ))
 
   (setq call-self (lambda (v x)
@@ -101,13 +103,7 @@
               (prin1 (cadr tmp))
 
               ; 変数リストを重複を削って表示
-              (setq uniq nil)
               (foreach w warnings
-                (if (not (member w uniq))
-                  (setq uniq (cons w uniq))
-                )
-              )
-              (foreach w uniq
                 (princ "\n  ")(prin1 w)
               )
             )
