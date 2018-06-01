@@ -1,11 +1,19 @@
 
+; (strict) の下請け関数
 ; S式の中から、未宣言の変数を検索する
 ;   vars - 宣言済み変数のリスト
 ;   s-exp - S式
 ; returns
-;   未宣言の変数のリスト
-(defun strictsub (vars s-exp / warnings word add-warn test-var call-self eval-rest)
+;   ( 未宣言の変数のリスト 使用された変数のリスト)
+(defun strictsub (vars s-exp / warnings word add-warn add-used test-var call-self eval-rest used)
   (setq warnings nil)
+  (setq used nil)
+
+  (setq add-used (lambda (x)
+    (if (not (member x used))
+      (setq used (cons x used))
+    )
+  ))
 
   (setq add-warn (lambda (x)
     (if (not (member x warnings))
@@ -13,8 +21,14 @@
     )
   ))
 
-  (setq call-self (lambda (v x)
-      (setq warnings (append warnings (strictsub v x)))
+  (setq call-self (lambda (v x / r tmp)
+      (setq r (strictsub v x))
+      (foreach tmp (car r)
+        (add-warn tmp)
+      )
+      (foreach tmp (cadr r)
+        (add-used tmp)
+      )
   ))
 
   (setq eval-rest (lambda (a / tmp)
@@ -30,6 +44,7 @@
   (setq test-var (lambda (v)
     (if (and v (not (member v vars)))
       (add-warn v)
+      (add-used v)
     )
   ))
 
@@ -65,13 +80,13 @@
       (eval-rest (cdr s-exp))
     )
   )
-  warnings
+  (list warnings used)
 )
 
 ; Lisp のソースで定義されている関数内で、
 ; ローカル宣言されていない変数に setq / foreach していたら、
 ; 表示する
-(defun strict (fname / tmp fd source s-exp warnings uniq w)
+(defun strict (fname / tmp fd source s-exp r vars)
   ; 拡張子がなければ付加
   (if (or (< (strlen fname) 4)
           (/= (strcase (substr fname (- (strlen fname) 3))) ".LSP"))
@@ -95,29 +110,33 @@
       (setq s-exp (read (strcat "(\n" source "\n)")))
       (foreach tmp s-exp
         (if (= (car tmp) 'DEFUN)
-          (if (setq warnings (strictsub (caddr tmp) (cdddr tmp)))
-            (progn
-              ; 未宣言の変数が見付かったのでリポート
-              ; 関数名
-              (princ "\nOn ")
-              (prin1 (cadr tmp))
+          ((lambda ( / r funcname v)
+            (setq funcname (cadr tmp))
+            (setq r (strictsub (setq vars (caddr tmp)) (cdddr tmp)))
 
-              ; 変数リストを重複を削って表示
-              (foreach w warnings
-                (princ "\n  ")(prin1 w)
-              )
-            )
-            ; else
-            (progn
+            (foreach v (car r)
               (terpri)
-              (prin1 (cadr tmp))
-              (princ " -> Ok")
+              (prin1 funcname)
+              (princ ": ")
+              (prin1 v)
+              (princ " is not declared.")
             )
-          )
-        )
-      )
-    )
-  )
+            (foreach v (cdr (member '/ vars))
+              (if (not (member v (cadr r)))
+                (progn
+                  (terpri)
+                  (prin1 funcname)
+                  (princ ": ")
+                  (prin1 v)
+                  (princ " is unused.")
+                )
+              )
+            ) ; foreach
+          )) ; lambda
+        ) ; if
+      ) ; foreach
+    ) ; T
+  ) ; cond
   (if fd (close fd))
   (princ)
 )
