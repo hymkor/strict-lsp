@@ -10,18 +10,14 @@
   (setq used nil)
 
   (defun add-used (x)
-    (if (not (member x used))
-      (setq used (cons x used))
-    )
-  )
+    (or (member x used)
+        (setq used (cons x used))))
 
-  (setq add-warn (lambda (x)
-    (if (not (member x warnings))
-      (setq warnings (cons x warnings))
-    )
-  ))
+  (defun add-warn (x)
+    (or (member x warnings)
+        (setq warnings (cons x warnings))))
 
-  (setq call-self (lambda (v x / r tmp)
+  (defun call-self (v x / r tmp)
       (setq r (strictsub v x))
       (foreach tmp (car r)
         (add-warn tmp)
@@ -29,9 +25,9 @@
       (foreach tmp (cadr r)
         (add-used tmp)
       )
-  ))
+  )
 
-  (setq eval-rest (lambda (a / tmp)
+  (defun eval-rest (a / tmp)
     (if (listp a)
       (foreach tmp a
         (if (listp tmp)
@@ -39,14 +35,14 @@
         )
       )
     )
-  ))
+  )
 
-  (setq test-var (lambda (v)
+  (defun test-var (v)
     (if (and v (not (member v vars)))
       (add-warn v)
       (add-used v)
     )
-  ))
+  )
 
   (cond
     ((or (not s-exp) (not (listp s-exp)))
