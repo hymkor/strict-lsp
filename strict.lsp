@@ -50,7 +50,10 @@
     ((or (not s-exp) (not (listp s-exp)))
          ; do nothing
     )
-    ((= (setq word (car s-exp)) 'LAMBDA)
+    ((= (setq word (car s-exp)) 'QUOTE)
+         ; do nothing
+    )
+    ((= word 'LAMBDA)
       (call-self (append vars (cadr s-exp)) (cddr s-exp))
     )
     ((= word 'DEFUN)
