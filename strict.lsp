@@ -38,9 +38,11 @@
   )
 
   (defun test-var (v)
-    (if (and v (not (member v vars)))
-      (add-warn v)
-      (add-used v)
+    (if v
+      (if (member v vars)
+        (add-used v)
+        (add-warn v)
+      )
     )
   )
 
