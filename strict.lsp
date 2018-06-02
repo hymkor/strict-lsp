@@ -102,12 +102,30 @@
       (alert (strcat "can not open " tmp))
     )
     (T
-      ; ソースを全て読み込む
+      ; read file all
+      (setq source "(")
       (while (setq tmp (read-line fd))
         (setq source (if source (strcat source "\n" tmp) tmp))
       )
-      ; S式化
-      (setq s-exp (read (strcat "(\n" source "\n)")))
+      (setq source (strcat source "\n)"))
+      (close fd)
+      (setq fd nil)
+
+      ; to S-expression
+      ((lambda (/ save-error)
+        (setq save-error *error*)
+        (defun *error* (msg)
+          (setq msg nil)
+          (terpri)
+          (princ fname)
+          (princ ": syntax error")
+          (setq *error* save-error)
+          (princ)
+        )
+        (setq s-exp (read source))
+        (setq *error* save-error)
+      ))
+
       (foreach tmp s-exp
         (if (= (car tmp) 'DEFUN)
           ((lambda ( / r funcname v)
