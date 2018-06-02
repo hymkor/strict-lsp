@@ -18,24 +18,18 @@
         (setq warnings (cons x warnings))))
 
   (defun call-self (v x / r tmp)
-      (setq r (strictsub v x))
-      (foreach tmp (car r)
-        (add-warn tmp)
-      )
-      (foreach tmp (cadr r)
-        (add-used tmp)
-      )
+    (setq r (strictsub v x))
+    (foreach tmp (car r)
+      (add-warn tmp))
+    (foreach tmp (cadr r)
+      (add-used tmp))
   )
 
   (defun eval-rest (a / tmp)
     (if (listp a)
       (foreach tmp a
         (if (listp tmp)
-          (call-self vars tmp)
-        )
-      )
-    )
-  )
+          (call-self vars tmp)))))
 
   (defun test-var (v)
     (if v
