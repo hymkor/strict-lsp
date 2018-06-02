@@ -22,7 +22,7 @@ about SCRIPT.LSP.
 For example
 -----------
 
-foo.lsp:
+example-warning.lsp
 
 ```
 (defun hoge (/ foo)
@@ -33,7 +33,7 @@ foo.lsp:
 do on the commandline of CAD:
 
 ```
-: (strict "foo")
+: (strict "example-warning")
 
 HOGE: BAR is not declared.
 HOGE: FOO is unused.
