@@ -35,6 +35,6 @@ do on the commandline of CAD:
 ```
 : (strict "example-warning")
 
-HOGE: BAR is not declared.
+HOGE: BAR has no declarations.
 HOGE: FOO is unused.
 ```
