@@ -138,7 +138,7 @@
                   (prin1 funcname)
                   (princ ": ")
                   (prin1 v)
-                  (princ " is not declared.")
+                  (princ " has no declarations.")
                 )
               )
             )
